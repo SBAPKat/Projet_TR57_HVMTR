@@ -464,15 +464,13 @@ interrupt void MainISR(void)
             
             CL_reset_request = 0;
         }
+        Erreur_vitesse = Vitref_rpm - Vit_rpm;
         
-        //Iq_ref = Iq_ref_precedent + (KP_Vitesse/(POLES/2*PHI_F))*(Erreur_vitesse - Erreur_vitesse_precedent + Periode_echantillonnage/Tau_integrale_Vitesse*Erreur_vitesse_precedent);
+        Iq_ref = Iq_ref + (KP_Vitesse/(POLES/2*PHI_F))*(Erreur_vitesse - Erreur_vitesse_precedent + Periode_echantillonnage/Tau_integrale_Vitesse*Erreur_vitesse_precedent);
         // Calcul de Iq et Id en fonction de Ia Ib et Ic
-    // Calculate Id and Iq from phase currents Ia, Ib, and Ic
-        if(tabCount == 0) Iq_ref = 0.0;
-        if(tabCount == 50) Iq_ref = Iq_ref_consigne;
-        if(tabCount == 200) Iq_ref = 0.0;
-        if(tabCount == 300) Iq_ref = -Iq_ref_consigne;
-        if(tabCount == 450) Iq_ref = 0.0;
+        
+
+
         // use concordia to get Ialpha and Ibeta
         I_alpha = RAC2S3 * (Ia - 0.5*Ib - 0.5*Ic);
         I_beta = RAC2S3 * (RAC3/2*Ib - RAC3/2*Ic);
@@ -495,6 +493,7 @@ interrupt void MainISR(void)
 
         Erreur_Id_precedent = Erreur_Id;
         Erreur_Iq_precedent = Erreur_Iq;
+        Erreur_vitesse_precedent = Erreur_vitesse;
 
         Vq = Uq_ref + Puls_Elec*LD*Id + Puls_Elec * PHI_F;
         Vd = Ud_ref - Puls_Elec*LQ*Iq;
