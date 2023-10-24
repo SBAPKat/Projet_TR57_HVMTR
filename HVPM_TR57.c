@@ -466,7 +466,14 @@ interrupt void MainISR(void)
         }
         Erreur_vitesse = Vitref_rpm - Vit_rpm;
         
-        Iq_ref = Iq_ref + (KP_Vitesse/(POLES/2*PHI_F))*(Erreur_vitesse - Erreur_vitesse_precedent + Periode_echantillonnage/Tau_integrale_Vitesse*Erreur_vitesse_precedent);
+        Iq_ref = Iq_ref + (KP_Vitesse/(POLES/2*PHI_F))*(Erreur_vitesse - Erreur_vitesse_precedent + T_ISR/Tau_integrale_Vitesse*Erreur_vitesse_precedent);
+         
+        //anti windup
+        if(Iq_ref > 1.0) Iq_ref = 1.0;
+        if(Iq_ref < -1.0) Iq_ref = -1.0;
+
+
+
         // Calcul de Iq et Id en fonction de Ia Ib et Ic
         
 
