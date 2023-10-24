@@ -49,9 +49,9 @@ int getch(void);
 int loop_status = OPEN_LOOP;
 
 //CONTROLE
-float KP_Vitesse = 1;
+float KP_Vitesse = 0.01;
 float KI_Vitesse = 1;
-float Tau_integrale_Vitesse = 1;
+float Tau_integrale_Vitesse = 0.003;
 
 float KP_Iq = 10;
 float KI_Iq = 1;
@@ -130,7 +130,7 @@ float CPU_LOAD=0.0, CPU_LOAD1=0.0;
 
 float Ia, Ib, Ic, Vbus, Va, Vb, Vc, Vq, Vd, Valpha, Vbeta;
 float Ialpha, Ibeta, sinTheta, cosTheta;
-float Id, Iq;
+float Id, Iq, Iqsat=1.0;
 int Ia_t, Ib_t, Vbus_t;
 int Ta, Tb, Tc, Tmax, Tmin;
 float Offset_Ia, Offset_Ib, Offset_Vbus;
@@ -138,7 +138,7 @@ float Gain_Ia, Gain_Ib, Gain_Vbus;
 int pos_k=0, pos_k1, Calage_Index=600, Nb_paire_poles;
 float Res_Mec, Theta_Mec, Theta_Elec=0.0, Theta_Elec0;
 float F_Elec_BO=0.0, Theta_Elec_BO=0.0, Vmax_BO=0.0;
-float Vitref_rpm=100.0;
+float Vitref_rpm=100.0, Vitmax=0.0;
 
 float Isecu=3.0;    // Limite maximale de courant de phase avant d�clenchement des s�curit�s
 
@@ -465,22 +465,17 @@ interrupt void MainISR(void)
             CL_reset_request = 0;
         }
         Erreur_vitesse = Vitref_rpm - Vit_rpm;
+
+        Iq_ref = Iq_ref + (KP_Vitesse/(Nb_paire_poles*PHI_F))*(Erreur_vitesse - Erreur_vitesse_precedent + T_ISR/(Tau_integrale_Vitesse)*Erreur_vitesse_precedent);
+
+        // anti windup
+        if (Iq_ref >Iqsat) Iq_ref = Iqsat;
+        if (Iq_ref<-Iqsat) Iq_ref = -Iqsat;
         
-        Iq_ref = Iq_ref + (KP_Vitesse/(POLES/2*PHI_F))*(Erreur_vitesse - Erreur_vitesse_precedent + T_ISR/Tau_integrale_Vitesse*Erreur_vitesse_precedent);
-         
-        //anti windup
-        if(Iq_ref > 1.0) Iq_ref = 1.0;
-        if(Iq_ref < -1.0) Iq_ref = -1.0;
-
-
-
         // Calcul de Iq et Id en fonction de Ia Ib et Ic
-        
-
-
         // use concordia to get Ialpha and Ibeta
         I_alpha = RAC2S3 * (Ia - 0.5*Ib - 0.5*Ic);
-        I_beta = RAC2S3 * (RAC3/2*Ib - RAC3/2*Ic);
+        I_beta = RAC2S3 * (RAC3/2.0*Ib - RAC3/2.0*Ic);
         sinTheta = sin(Theta_Elec);
         cosTheta = cos(Theta_Elec);
 
@@ -501,7 +496,6 @@ interrupt void MainISR(void)
         Erreur_Id_precedent = Erreur_Id;
         Erreur_Iq_precedent = Erreur_Iq;
         Erreur_vitesse_precedent = Erreur_vitesse;
-
         Vq = Uq_ref + Puls_Elec*LD*Id + Puls_Elec * PHI_F;
         Vd = Ud_ref - Puls_Elec*LQ*Iq;
         Valpha = Vd * cosTheta - Vq * sinTheta;
@@ -559,7 +553,7 @@ interrupt void MainISR(void)
         if(tabCount<size_tab)
         {
             mes1.tab1[tabCount] = Ia*10000.0;
-            mes1.tab2[tabCount] = Ib*10000.0;
+            mes1.tab2[tabCount] = Vit_rpm*10.0;
             mes1.tab3[tabCount] = Vbus*100.0;
             mes1.tab4[tabCount] = pos_k;
             mes1.tab5[tabCount] = Iq * 1000;
@@ -573,7 +567,11 @@ interrupt void MainISR(void)
         {
             tabCount = 0;    //Buffer circulaire (sinon les donn�es restent m�moris�es)
         }
-    }
+        if(tabCount==(size_tab*0.1)) Vitref_rpm = Vitmax;
+        if(tabCount==(size_tab*0.4)) Vitref_rpm = 0.0;
+        if(tabCount==(size_tab*0.6)) Vitref_rpm = -Vitmax;
+        if(tabCount==(size_tab*0.9)) Vitref_rpm = 0.0;
+        }
 
 
 
