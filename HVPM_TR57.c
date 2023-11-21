@@ -327,6 +327,20 @@ void main(void)
 	           tmp = getch();
 	           D_transmit = tmp + (getch()<<8);
 	           break;
+            case 'M':
+                tmp = getch();
+                if(tmp=="O") loop_status = OPEN_LOOP;
+                else if(tmp=="F") loop_status = CLOSED_LOOP;
+                else loop_status = OPEN_LOOP;
+                break;
+            case 'S':
+                tmp = getch();
+                tmp = tmp + (getch()<<8);
+                Vitref_rpm = tmp;
+                break;
+            case 'R':
+                CL_reset_request = RESET;
+                break;
 	    }
 
 
@@ -569,10 +583,10 @@ interrupt void MainISR(void)
         {
             tabCount = 0;    //Buffer circulaire (sinon les donn�es restent m�moris�es)
         }
-        if(tabCount==(size_tab*0.1)) Vitref_rpm = Vitmax;
-        if(tabCount==(size_tab*0.4)) Vitref_rpm = 0.0;
-        if(tabCount==(size_tab*0.6)) Vitref_rpm = -Vitmax;
-        if(tabCount==(size_tab*0.9)) Vitref_rpm = 0.0;
+        // if(tabCount==(size_tab*0.1)) Vitref_rpm = Vitmax;
+        // if(tabCount==(size_tab*0.4)) Vitref_rpm = 0.0;
+        // if(tabCount==(size_tab*0.6)) Vitref_rpm = -Vitmax;
+        // if(tabCount==(size_tab*0.9)) Vitref_rpm = 0.0;
         }
 
 
