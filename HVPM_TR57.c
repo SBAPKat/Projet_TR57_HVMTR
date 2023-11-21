@@ -51,7 +51,7 @@ int loop_status = OPEN_LOOP;
 //CONTROLE
 float KP_Vitesse = 0.01;
 float KI_Vitesse = 1;
-float Tau_integrale_Vitesse = 0.003;
+float Tau_integrale_Vitesse = 0.004;
 
 float KP_Iq = 10;
 float KI_Iq = 1;
@@ -131,7 +131,7 @@ float CPU_LOAD=0.0, CPU_LOAD1=0.0;
 float Ia, Ib, Ic, Vbus, Va, Vb, Vc, Vq, Vd, Valpha, Vbeta;
 float Ialpha, Ibeta, sinTheta, cosTheta;
 float Id, Iq, Iqsat=1.0;
-int Ia_t, Ib_t, Vbus_t;
+int Ia_t, Ib_t, Vbus_t, Iq_t, Vit_t, Iq_ref_t;
 int Ta, Tb, Tc, Tmax, Tmin;
 float Offset_Ia, Offset_Ib, Offset_Vbus;
 float Gain_Ia, Gain_Ib, Gain_Vbus;
@@ -313,8 +313,8 @@ void main(void)
 	       if(Sync_ech)  // Si pas de r�ception alors transmission vers SCI (IHM)
 	       {
 	          putchar('a');
-	          putchar(Ia_t);
-	          putchar(Ia_t>>8);
+	          putchar(Iq_ref_t);
+	          putchar(Iq_ref_t>>8);
 	          putchar(Vbus_t);
 	          putchar(Vbus_t>>8);
 	          Sync_ech = 0;
@@ -538,8 +538,10 @@ interrupt void MainISR(void)
         TransmitCount++;
         if(TransmitCount>=D_transmit)
         {
-           Ia_t = Ia*1000.0;
-           Vbus_t = Vbus;
+           Iq_ref_t=Iq_ref*1000.0;
+           Iq_t = Iq*1000.0;
+           Vbus_t = Vbus*100.0;
+           Vit_t = Vit_rpm * 1000.0;
            Sync_ech = 1; /* indicateur permettant la synchro. du main() avec la d�cimation */
            TransmitCount = 0;
         }
